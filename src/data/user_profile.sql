@@ -34,7 +34,7 @@ AFTER INSERT ON auth.users
 FOR EACH ROW
 EXECUTE FUNCTION public.create_airbnb_profile();
 
--- Optional: backfill profiles for existing users
+-- Backfill profiles for existing users
 INSERT INTO public.user_profiles (user_id, email)
 SELECT id, email FROM auth.users
 ON CONFLICT (user_id) DO NOTHING;
