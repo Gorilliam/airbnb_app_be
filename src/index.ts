@@ -32,7 +32,7 @@ app.get('/', (c) => {
 
 app.route("/properties", propertyApp);
 
-app.get("/health/", (c) => {
+app.get("/health", (c) => {
   const now = Date.now();
   const uptimeSeconds = Math.floor((now - serverStartTime) / 1000);
 
