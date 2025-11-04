@@ -7,6 +7,8 @@ import { optionalAuth } from './middlewares/auth.js'
 import dotenv from "dotenv"
 dotenv.config();
 
+import propertyApp from './routes/property.js'
+
 const app = new Hono({
   strict: false,
 });
@@ -28,7 +30,7 @@ app.get('/', (c) => {
   return c.text('Hello Hono!')
 })
 
-//Add routes here
+app.route("/properties", propertyApp);
 
 app.get("/health/", (c) => {
   const now = Date.now();
