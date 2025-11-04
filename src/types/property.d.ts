@@ -16,7 +16,7 @@ interface Property extends NewProperty {
 interface PropertyListQuery {
   q?: string;
   location?: string;
-  sort_by?: "name" | "price_per_night" | "created_at";
+  sort_by?: "name" | "price_per_night" | "created_at" | string;
   offset?: number;
   limit?: number;
 }
