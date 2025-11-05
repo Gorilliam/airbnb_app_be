@@ -6,9 +6,7 @@ import * as userDb from "../database/user.js";
 
 export const authApp = new Hono();
 
-/**
- * 🧾 Register a new user
- */
+
 authApp.post("/register", registerValidator, async (c) => {
   const { email, password } = await c.req.json();
   const sb = c.get("supabase");
@@ -23,9 +21,7 @@ authApp.post("/register", registerValidator, async (c) => {
   return c.json(response.data.user, 200);
 });
 
-/**
- * 🔐 Log in an existing user
- */
+
 authApp.post("/login", async (c) => {
   const { email, password } = await c.req.json();
   const sb = c.get("supabase");
@@ -40,13 +36,11 @@ authApp.post("/login", async (c) => {
     });
   }
 
-  // Cookie-based auth (Supabase handles session tokens automatically)
+
   return c.json(data.user, 200);
 });
 
-/**
- * 🔁 Refresh the current session
- */
+
 authApp.post("/refresh", async (c) => {
   const sb = c.get("supabase");
   const { data, error } = await sb.auth.refreshSession();
@@ -66,9 +60,7 @@ authApp.post("/refresh", async (c) => {
   );
 });
 
-/**
- * 🚪 Log out
- */
+
 authApp.post("/logout", async (c) => {
   const sb = c.get("supabase");
   const { error } = await sb.auth.signOut();
@@ -82,9 +74,7 @@ authApp.post("/logout", async (c) => {
   return c.json({ message: "Successfully logged out" }, 200);
 });
 
-/**
- * 👤 Get the current logged-in user’s profile
- */
+
 authApp.get("/me", requireAuth, async (c) => {
   const sb = c.get("supabase");
   const user = c.get("user")!;
@@ -99,9 +89,7 @@ authApp.get("/me", requireAuth, async (c) => {
   return c.json(profile, 200);
 });
 
-/**
- * 🛠️ Update the current logged-in user’s profile
- */
+
 authApp.patch("/me", requireAuth, async (c) => {
   const sb = c.get("supabase");
   const user = c.get("user")!;
