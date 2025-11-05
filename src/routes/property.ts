@@ -51,7 +51,6 @@ propertyApp.get("/:id", async (c) => {
   }
 });
 
-// ✅ CREATE new property
 propertyApp.post("/", requireAuth, propertyValidator, async (c) => {
   const sb = c.get("supabase");
   const user = c.get("user")!; // current logged-in user
@@ -78,7 +77,7 @@ propertyApp.post("/", requireAuth, propertyValidator, async (c) => {
   }
 });
 
-// ✅ UPDATE property
+
 propertyApp.put("/:id", requireAuth, propertyValidator, async (c) => {
   const { id } = c.req.param();
   const sb = c.get("supabase");
@@ -86,7 +85,7 @@ propertyApp.put("/:id", requireAuth, propertyValidator, async (c) => {
   const newProperty: NewProperty = c.req.valid("json");
 
   try {
-    // Optionally, you could check if user owns this property first
+   
 
     const property = await db.updateProperty(sb, id, newProperty);
     if (!property) throw new Error("Property not found");
@@ -99,7 +98,7 @@ propertyApp.put("/:id", requireAuth, propertyValidator, async (c) => {
   }
 });
 
-// ✅ DELETE property
+
 propertyApp.delete("/:id", requireAuth, async (c) => {
   const { id } = c.req.param();
   const sb = c.get("supabase");

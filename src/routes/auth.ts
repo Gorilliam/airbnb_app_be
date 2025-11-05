@@ -76,18 +76,27 @@ authApp.post("/logout", async (c) => {
 
 
 authApp.get("/me", requireAuth, async (c) => {
-  const sb = c.get("supabase");
-  const user = c.get("user")!;
-  const profile = await userDb.getProfile(sb, user.id);
+  try {
+    const sb = c.get("supabase");
+    const user = c.get("user");
 
-  if (!profile) {
-    throw new HTTPException(404, {
-      res: c.json({ error: "User profile not found" }, 404),
-    });
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const profile = await userDb.getProfile(sb, user.id);
+
+    if (!profile) {
+      return c.json({ error: "User profile not found" }, 404);
+    }
+
+    return c.json(profile, 200);
+  } catch (err) {
+    console.error("Error in /auth/me:", err);
+    return c.json({ error: "Internal Server Error" }, 500);
   }
-
-  return c.json(profile, 200);
 });
+
 
 
 authApp.patch("/me", requireAuth, async (c) => {
