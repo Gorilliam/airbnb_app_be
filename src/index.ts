@@ -9,6 +9,7 @@ dotenv.config();
 
 import propertyApp from './routes/property.js';
 import authApp from './routes/auth.js';
+import bookingApp from './routes/booking.js';
 
 const app = new Hono({
   strict: false,
@@ -33,6 +34,7 @@ app.get('/', (c) => {
 
 app.route("/auth", authApp);
 app.route("/properties", propertyApp);
+app.route("/booking", bookingApp);
 
 app.get("/health", (c) => {
   const now = Date.now();
