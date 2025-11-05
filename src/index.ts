@@ -20,7 +20,10 @@ const serverStartTime = Date.now();
 app.use(
   "*",
   cors({
-    origin: ["http://localhost:3000"],
+    origin: [
+      "http://localhost:3000",
+      "https://airbnb-fe-fawn.vercel.app",
+    ],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
