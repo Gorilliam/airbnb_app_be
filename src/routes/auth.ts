@@ -81,7 +81,7 @@ authApp.get("/me", requireAuth, async (c) => {
     const user = c.get("user");
 
     if (!user) {
-      return c.json({ error: "Unauthorized" }, 401);
+      return c.json({ user: null }, 200);
     }
 
     const profile = await userDb.getProfile(sb, user.id);
