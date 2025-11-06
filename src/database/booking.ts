@@ -32,8 +32,6 @@ export async function getBookings(
     .select(
       `
       id,
-      user_id,
-      property_id,
       check_in_date,
       check_out_date,
       total_price,
@@ -64,6 +62,7 @@ export async function getBookings(
     limit,
   };
 }
+
 
 
 export async function getBooking(
