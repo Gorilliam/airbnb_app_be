@@ -1,24 +1,30 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+
 type BookingWithRelations = Omit<Booking, "user_id" | "property_id"> & {
   user: {
-    id: string;
+    user_id: string;
     name: string;
     email: string;
-  };
+  } | null;
   property: {
     id: string;
     name: string;
     location: string;
     price_per_night: number;
-  };
+  } | null;
 };
 
 
 export async function getBookings(
   sb: SupabaseClient,
   query: BookingListQuery
-): Promise<{ data: BookingWithRelations[]; count: number | null; offset: number; limit: number }> {
+): Promise<{
+  data: BookingWithRelations[];
+  count: number | null;
+  offset: number;
+  limit: number;
+}> {
   const { limit = 10, offset = 0 } = query;
 
   const { data, error, count } = await sb
@@ -26,12 +32,14 @@ export async function getBookings(
     .select(
       `
       id,
+      user_id,
+      property_id,
       check_in_date,
       check_out_date,
       total_price,
       created_at,
       user:user_profiles (
-        id,
+        user_id,
         name,
         email
       ),
@@ -58,15 +66,31 @@ export async function getBookings(
 }
 
 
-export async function getBooking(sb: SupabaseClient, id: string): Promise<Booking> {
-  const { data, error } = await sb.from("bookings").select("*").eq("id", id).single();
+export async function getBooking(
+  sb: SupabaseClient,
+  id: string
+): Promise<Booking> {
+  const { data, error } = await sb
+    .from("bookings")
+    .select("*")
+    .eq("id", id)
+    .single();
+
   if (error) throw error;
   return data as Booking;
 }
 
 
-export async function createBooking(sb: SupabaseClient, booking: NewBooking): Promise<Booking> {
-  const { data, error } = await sb.from("bookings").insert(booking).select().single();
+export async function createBooking(
+  sb: SupabaseClient,
+  booking: NewBooking
+): Promise<Booking> {
+  const { data, error } = await sb
+    .from("bookings")
+    .insert(booking)
+    .select()
+    .single();
+
   if (error) throw error;
   return data as Booking;
 }
@@ -77,15 +101,31 @@ export async function updateBooking(
   id: string,
   booking: Partial<NewBooking>
 ): Promise<Booking> {
-  const { data, error } = await sb.from("bookings").update(booking).eq("id", id).select().single();
+  const { data, error } = await sb
+    .from("bookings")
+    .update(booking)
+    .eq("id", id)
+    .select()
+    .single();
+
   if (error) throw error;
   return data as Booking;
 }
 
 
-export async function deleteBooking(sb: SupabaseClient, id: string): Promise<Booking> {
-  const { data, error } = await sb.from("bookings").delete().eq("id", id).select().single();
+export async function deleteBooking(
+  sb: SupabaseClient,
+  id: string
+): Promise<Booking> {
+  const { data, error } = await sb
+    .from("bookings")
+    .delete()
+    .eq("id", id)
+    .select()
+    .single();
+
   if (error) throw error;
   return data as Booking;
 }
+
 
