@@ -14,6 +14,7 @@ type BookingWithRelations = Omit<Booking, "user_id" | "property_id"> & {
   };
 };
 
+
 export async function getBookings(
   sb: SupabaseClient,
   query: BookingListQuery
@@ -46,8 +47,6 @@ export async function getBookings(
     .range(offset, offset + limit - 1)
     .order("created_at", { ascending: false });
 
-  console.log("Fetched bookings:", { data, error, count });
-
   if (error) throw error;
 
   return {
@@ -58,4 +57,35 @@ export async function getBookings(
   };
 }
 
+
+export async function getBooking(sb: SupabaseClient, id: string): Promise<Booking> {
+  const { data, error } = await sb.from("bookings").select("*").eq("id", id).single();
+  if (error) throw error;
+  return data as Booking;
+}
+
+
+export async function createBooking(sb: SupabaseClient, booking: NewBooking): Promise<Booking> {
+  const { data, error } = await sb.from("bookings").insert(booking).select().single();
+  if (error) throw error;
+  return data as Booking;
+}
+
+
+export async function updateBooking(
+  sb: SupabaseClient,
+  id: string,
+  booking: Partial<NewBooking>
+): Promise<Booking> {
+  const { data, error } = await sb.from("bookings").update(booking).eq("id", id).select().single();
+  if (error) throw error;
+  return data as Booking;
+}
+
+
+export async function deleteBooking(sb: SupabaseClient, id: string): Promise<Booking> {
+  const { data, error } = await sb.from("bookings").delete().eq("id", id).select().single();
+  if (error) throw error;
+  return data as Booking;
+}
 
