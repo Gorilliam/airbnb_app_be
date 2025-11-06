@@ -27,7 +27,7 @@ function createSupabaseForRequest(c: Context) {
                         ...options,
                         httpOnly: true,
                         secure: true,
-                        sameSite: "lax",
+                        sameSite: "none",
                         path: "/",
                     })
                 })
