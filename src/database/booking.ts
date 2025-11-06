@@ -1,38 +1,79 @@
-import type { SupabaseClient, PostgrestSingleResponse } from "@supabase/supabase-js";
+import type {
+  SupabaseClient,
+  PostgrestSingleResponse,
+} from "@supabase/supabase-js";
+
+
+/** Booking joined with its related user and property info */
+export interface BookingWithRelations extends Booking {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
+  property: {
+    id: string;
+    name: string;
+    location: string;
+    price_per_night: number;
+  } | null;
+}
+
+/** List result type for paginated bookings */
+export interface BookingListResponse {
+  data: BookingWithRelations[];
+  count: number | null;
+  offset: number;
+  limit: number;
+}
 
 export async function getBookings(
   sb: SupabaseClient,
-  query: BookingListQuery = {}
-): Promise<PaginatedListResponse<Booking>> {
-  const sortable = new Set(["check_in_date", "check_out_date", "created_at"]);
-  const order = query.sort_by && sortable.has(query.sort_by)
-    ? query.sort_by
-    : "created_at";
-  const startIndex = query.offset || 0;
-  const endIndex = startIndex + (query.limit || 10) - 1;
+  query: Partial<BookingListQuery> = {}
+): Promise<BookingListResponse> {
+  const { limit = 10, offset = 0 } = query;
 
-  const _query = sb
+  const { data, error, count } = await sb
     .from("bookings")
-    .select("*", { count: "exact" })
-    .order(order, { ascending: true })
-    .range(startIndex, endIndex);
+    .select(
+      `
+      id,
+      check_in_date,
+      check_out_date,
+      total_price,
+      created_at,
+      user:profiles (
+        id,
+        name,
+        email
+      ),
+      property:properties (
+        id,
+        name,
+        location,
+        price_per_night
+      )
+      `,
+      { count: "exact" }
+    )
+    .range(offset, offset + limit - 1)
+    .order("created_at", { ascending: false });
 
-  if (query.q) {
-    _query.or(`id.ilike.%${query.q}%`);
-  }
-
-  const { data, count, error }: PostgrestSingleResponse<Booking[]> & { count: number | null } = await _query;
   if (error) throw error;
 
-  return {
-    data: data || [],
-    count: count || 0,
-    offset: startIndex,
-    limit: query.limit || 10,
-  };
+return {
+  data: (data as unknown as BookingWithRelations[]) ?? [],
+  count,
+  offset,
+  limit,
+};
+
 }
 
-export async function getBooking(sb: SupabaseClient, id: string): Promise<Booking> {
+export async function getBooking(
+  sb: SupabaseClient,
+  id: string
+): Promise<Booking> {
   const { data, error }: PostgrestSingleResponse<Booking> = await sb
     .from("bookings")
     .select("*")
@@ -43,7 +84,10 @@ export async function getBooking(sb: SupabaseClient, id: string): Promise<Bookin
   return data;
 }
 
-export async function createBooking(sb: SupabaseClient, booking: NewBooking): Promise<Booking> {
+export async function createBooking(
+  sb: SupabaseClient,
+  booking: NewBooking
+): Promise<Booking> {
   const { data, error }: PostgrestSingleResponse<Booking> = await sb
     .from("bookings")
     .insert(booking)
@@ -54,7 +98,11 @@ export async function createBooking(sb: SupabaseClient, booking: NewBooking): Pr
   return data;
 }
 
-export async function updateBooking(sb: SupabaseClient, id: string, booking: Partial<NewBooking>): Promise<Booking> {
+export async function updateBooking(
+  sb: SupabaseClient,
+  id: string,
+  booking: Partial<NewBooking>
+): Promise<Booking> {
   const { data, error }: PostgrestSingleResponse<Booking> = await sb
     .from("bookings")
     .update(booking)
@@ -66,7 +114,10 @@ export async function updateBooking(sb: SupabaseClient, id: string, booking: Par
   return data;
 }
 
-export async function deleteBooking(sb: SupabaseClient, id: string): Promise<Booking> {
+export async function deleteBooking(
+  sb: SupabaseClient,
+  id: string
+): Promise<Booking> {
   const { data, error }: PostgrestSingleResponse<Booking> = await sb
     .from("bookings")
     .delete()
@@ -77,3 +128,4 @@ export async function deleteBooking(sb: SupabaseClient, id: string): Promise<Boo
   if (error) throw error;
   return data;
 }
+
