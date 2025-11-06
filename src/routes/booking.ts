@@ -23,6 +23,9 @@ bookingApp.get("/", bookingQueryValidator, async (c) => {
 
   try {
     const response = await db.getBookings(sb, query);
+    console.log("Fetched bookings:", response.data?.length, "rows");
+    console.log(JSON.stringify(response.data, null, 2));
+
     return c.json({ ...defaultResponse, ...response });
   } catch (error) {
     console.error("Error fetching bookings:", error);
