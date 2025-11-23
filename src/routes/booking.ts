@@ -10,7 +10,7 @@ import type { PostgrestError } from "@supabase/supabase-js";
 
 const bookingApp = new Hono();
 
-bookingApp.get("/", bookingQueryValidator, async (c) => {
+bookingApp.get("/", requireAuth, bookingQueryValidator, async (c) => {
   const query = c.req.valid("query");
   const sb = c.get("supabase");
 
@@ -22,7 +22,16 @@ bookingApp.get("/", bookingQueryValidator, async (c) => {
   };
 
   try {
-    const response = await db.getBookings(sb, query);
+    const user = c.get("user");
+
+    if (!user) {
+  throw new HTTPException(401, { message: "Unauthorized" });
+}
+    const response = await db.getBookingsForUser(
+      sb,
+      user.id,
+       query
+      );
     console.log("Fetched bookings:", response.data?.length, "rows");
     console.log(JSON.stringify(response.data, null, 2));
 

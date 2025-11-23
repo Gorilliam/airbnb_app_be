@@ -68,7 +68,6 @@ export async function optionalAuth(c: Context, next: Next) {
 }
 
 export async function requireAuth(c: Context, next: Next) {
-    return next()
     await withSupabase(c, async () => {});
     const user = c.get("user");
     if (!user) {

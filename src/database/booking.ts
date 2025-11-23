@@ -73,6 +73,30 @@ export async function getBooking(
   return data as Booking;
 }
 
+export async function getBookingsForUser(
+  sb: SupabaseClient,
+  userId: string,
+  query: BookingListQuery
+) {
+  const { limit = 10, offset = 0 } = query;
+
+  const { data, error, count } = await sb
+    .from("bookings")
+    .select(`
+      *,
+      user:user_profiles (*),
+      property:properties (*)
+    `)
+    .eq("user_id", userId)
+    .range(offset, offset + limit - 1)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  return { data, count, offset, limit };
+}
+
+
 
 export async function createBooking(
   sb: SupabaseClient,
