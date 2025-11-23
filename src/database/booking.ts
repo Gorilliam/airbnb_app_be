@@ -27,31 +27,25 @@ export async function getBookings(
 }> {
   const { limit = 10, offset = 0 } = query;
 
-  const { data, error, count } = await sb
-    .from("bookings")
-    .select(
-      `
+const { data, error, count } = await sb
+  .from("bookings")
+  .select(`
+    *,
+    user:user_profiles (
+      user_id,
+      name,
+      email
+    ),
+    property:properties (
       id,
-      check_in_date,
-      check_out_date,
-      total_price,
-      created_at,
-      user:user_profiles (
-        user_id,
-        name,
-        email
-      ),
-      property:properties (
-        id,
-        name,
-        location,
-        price_per_night
-      )
-      `,
-      { count: "exact" }
+      name,
+      location,
+      price_per_night
     )
-    .range(offset, offset + limit - 1)
-    .order("created_at", { ascending: false });
+  `, { count: "exact" })
+  .range(offset, offset + limit - 1)
+  .order("created_at", { ascending: false });
+
 
   if (error) throw error;
 
