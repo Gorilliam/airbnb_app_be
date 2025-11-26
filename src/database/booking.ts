@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+console.log("🔥 booking.ts HAS LOADED");
+
 
 type BookingWithRelations = Omit<Booking, "user_id" | "property_id"> & {
   user: {
@@ -98,19 +100,38 @@ export async function getBookingsForUser(
 
 
 
-export async function createBooking(
-  sb: SupabaseClient,
-  booking: NewBooking
-): Promise<Booking> {
+export async function createBooking(sb: SupabaseClient, booking: NewBooking) {
+  console.log("🟦 Incoming booking payload:", booking);
+
+  // 1. Create booking
   const { data, error } = await sb
     .from("bookings")
     .insert(booking)
     .select()
     .single();
 
+  console.log("🟩 Insert data:", data);
+  console.log("🟥 Insert error:", error);
+
   if (error) throw error;
-  return data as Booking;
+
+  // 2. Update availability
+  console.log("🟦 Updating availability for property:", booking.property_id);
+
+  const { data: updateData, error: updateError } = await sb
+    .from("properties")
+    .update({ availability: false })
+    .eq("id", booking.property_id)
+    .select();
+
+  console.log("🟨 Availability update result:", updateData);
+  console.log("🟥 Availability update error:", updateError);
+
+  if (updateError) throw updateError;
+
+  return data;
 }
+
 
 
 export async function updateBooking(
@@ -133,16 +154,29 @@ export async function updateBooking(
 export async function deleteBooking(
   sb: SupabaseClient,
   id: string
-): Promise<Booking> {
-  const { data, error } = await sb
+) {
+  const { data: booking } = await sb
     .from("bookings")
-    .delete()
+    .select("property_id")
     .eq("id", id)
-    .select()
     .single();
 
-  if (error) throw error;
-  return data as Booking;
-}
+  if (!booking) return null;
 
+  const { error: deleteError } = await sb
+    .from("bookings")
+    .delete()
+    .eq("id", id);
+
+  if (deleteError) throw deleteError;
+
+  const { error: propertyError } = await sb
+    .from("properties")
+    .update({ availability: true })
+    .eq("id", booking.property_id);
+
+  if (propertyError) throw propertyError;
+
+  return true;
+}
 
