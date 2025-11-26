@@ -3,9 +3,11 @@ import { HTTPException } from "hono/http-exception";
 import { requireAuth } from "../middlewares/auth.js";
 import * as db from "../database/booking.js";
 import {
-  bookingValidator,
-  bookingQueryValidator,
+  bookingCreateValidator,
+  bookingUpdateValidator,
+  bookingQueryValidator
 } from "../validators/bookingValidator.js";
+
 import type { PostgrestError } from "@supabase/supabase-js";
 
 const bookingApp = new Hono();
@@ -58,7 +60,7 @@ bookingApp.get("/:id", async (c) => {
 });
 
 
-bookingApp.post("/", requireAuth, bookingValidator, async (c) => {
+bookingApp.post("/", requireAuth, bookingCreateValidator,  async (c) => {
   const sb = c.get("supabase");
   const user = c.get("user")!; // logged-in user
   const newBooking = c.req.valid("json");
@@ -83,7 +85,7 @@ bookingApp.post("/", requireAuth, bookingValidator, async (c) => {
   }
 });
 
-bookingApp.put("/:id", requireAuth, bookingValidator, async (c) => {
+bookingApp.put("/:id", requireAuth, bookingUpdateValidator, async (c) => {
   const { id } = c.req.param();
   const sb = c.get("supabase");
   const newBooking: Partial<NewBooking> = c.req.valid("json");
