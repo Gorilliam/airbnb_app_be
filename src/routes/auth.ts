@@ -8,23 +8,30 @@ export const authApp = new Hono();
 
 
 authApp.post("/register", registerValidator, async (c) => {
-  const { email, password, name } = c.req.valid("json");
-
+  const { email, password, name } = await c.req.json();
   const sb = c.get("supabase");
-  const { data, error } = await sb.auth.signUp({ email, password });
 
-  if (error || !data.user) {
-    return c.json({ error: error?.message || "Signup failed" }, 400);
+  const result = await sb.auth.signUp({ email, password });
+
+  if (result.error) {
+    console.error("Supabase signup error:", result.error);
+    return c.json({ error: result.error.message || "Registration failed" }, 400);
+  }
+
+  const user = result.data.user;
+  if (!user) {
+    console.error("Supabase signup returned null user");
+    return c.json({ error: "User not created yet (email confirmation required)" }, 400);
   }
 
   await sb.from("user_profiles").insert({
-    user_id: data.user.id,
+    user_id: user.id,
     name,
     email,
     role: "guest",
   });
 
-  return c.json({ message: "User registered successfully" }, 200);
+  return c.json(user, 200);
 });
 
 
