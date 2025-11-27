@@ -22,3 +22,18 @@ export async function updateProfile(sb: SupabaseClient, uid: string, user: Parti
   if (error) throw error;
   return data;
 }
+
+export async function createProfile(
+  sb: SupabaseClient,
+  profile: NewUserProfile
+): Promise<UserProfile> {
+  const { data, error }: PostgrestSingleResponse<UserProfile> = await sb
+    .from("user_profiles")
+    .insert(profile)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
