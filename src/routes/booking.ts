@@ -43,13 +43,21 @@ bookingApp.get("/", requireAuth, bookingQueryValidator, async (c) => {
     return c.json(defaultResponse);
   }
 });
-
-bookingApp.get("/:id", async (c) => {
+bookingApp.get("/:id", requireAuth, async (c) => {
   const { id } = c.req.param();
   const sb = c.get("supabase");
+  const user = c.get("user")!;
 
   try {
     const booking = await db.getBooking(sb, id);
+    if (!booking) throw new Error("Booking not found");
+
+    if (booking.user_id !== user.id && user.role !== "admin") {
+      throw new HTTPException(403, {
+        res: c.json({ error: "Not allowed to view this booking" }, 403)
+      });
+    }
+
     return c.json(booking, 200);
   } catch (error) {
     console.error("Error fetching booking:", error);
