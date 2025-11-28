@@ -85,10 +85,17 @@ propertyApp.put("/:id", requireAuth, propertyValidator, async (c) => {
   const newProperty: NewProperty = c.req.valid("json");
 
   try {
-   
+    const existing = await db.getProperty(sb, id);
+
+    if (!existing) throw new Error("Not found");
+
+    if (existing.user_id !== user.id) {
+      throw new HTTPException(403, {
+        res: c.json({ error: "Not allowed to update this property" }, 403),
+      });
+    }
 
     const property = await db.updateProperty(sb, id, newProperty);
-    if (!property) throw new Error("Property not found");
     return c.json(property, 200);
   } catch (error) {
     console.error("Error updating property:", error);
