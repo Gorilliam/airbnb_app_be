@@ -7,7 +7,7 @@ const propertySchema: z.ZodType<NewProperty> = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   location: z.string().min(1, "Location is required"),
-  price_per_night: z.number().positive("Price per night must be positive"),
+  price_per_night: z.coerce.number().positive("Price per night must be positive"),
   availability: z.boolean().optional(),
   created_at: z.string().optional(),
 });
