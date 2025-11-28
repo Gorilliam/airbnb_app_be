@@ -84,7 +84,6 @@ propertyApp.put("/:id", requireAuth, propertyValidator, async (c) => {
   const id = c.req.param("id");
   const newProperty = c.req.valid("json");
 
-  // 1. Retrieve property (do not hide errors)
   const existing = await db.getProperty(sb, id).catch((err) => {
     console.error("DB error (getProperty):", err);
     throw new HTTPException(500, {
@@ -92,21 +91,18 @@ propertyApp.put("/:id", requireAuth, propertyValidator, async (c) => {
     });
   });
 
-  // 2. Does it exist?
   if (!existing) {
     throw new HTTPException(404, {
       res: c.json({ error: "Property not found" }, 404),
     });
   }
 
-  // 3. Authorization check
   if (existing.user_id !== user.id && user.role !== "admin") {
     throw new HTTPException(403, {
       res: c.json({ error: "Not allowed to update this property" }, 403),
     });
   }
 
-  // 4. Attempt update
   try {
     const updated = await db.updateProperty(sb, id, newProperty);
     return c.json(updated, 200);
@@ -120,16 +116,37 @@ propertyApp.put("/:id", requireAuth, propertyValidator, async (c) => {
 
 
 propertyApp.delete("/:id", requireAuth, async (c) => {
-  const { id } = c.req.param();
   const sb = c.get("supabase");
+  const user = c.get("user")!;
+  const id = c.req.param("id");
+
+  const existing = await db.getProperty(sb, id).catch((err) => {
+    console.error("DB error (getProperty):", err);
+    throw new HTTPException(500, {
+      res: c.json({ error: "Database error while fetching property" }, 500),
+    });
+  });
+
+  if (!existing) {
+    throw new HTTPException(404, {
+      res: c.json({ error: "Property not found" }, 404),
+    });
+  }
+
+  if (existing.user_id !== user.id && user.role !== "admin") {
+    throw new HTTPException(403, {
+      res: c.json({ error: "Not allowed to delete this property" }, 403),
+    });
+  }
 
   try {
-    const property = await db.deleteProperty(sb, id);
-    if (!property) throw new Error("Property not found");
+    await db.deleteProperty(sb, id);
     return c.json({ message: "Property deleted successfully" }, 200);
-  } catch (error) {
-    console.error("Error deleting property:", error);
-    return c.json({ error: "Failed to delete property" }, 404);
+  } catch (err) {
+    console.error("Failed to delete property: ", err);
+    throw new HTTPException(400, {
+      res: c.json({ error: "Failed to delete property" }, 400),
+    });
   }
 });
 
