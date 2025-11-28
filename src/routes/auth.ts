@@ -116,10 +116,36 @@ authApp.get("/me", requireAuth, async (c) => {
 
 authApp.patch("/me", requireAuth, async (c) => {
   const sb = c.get("supabase");
-  const user = c.get("user")!;
-  const body: Partial<any> = await c.req.json();
+  const authUser = c.get("user");
 
-  const updatedProfile = await userDb.updateProfile(sb, user.id, body);
+  if (!authUser) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const userId = authUser.id;
+  const body: Partial<NewUserProfile> & { toggleRole?: boolean } = await c.req.json();
+
+  const currentProfile = await userDb.getProfile(sb, userId);
+  if (!currentProfile) {
+    return c.json({ error: "Profile not found" }, 404);
+  }
+
+  const updateData: Partial<NewUserProfile> = {};
+
+  // Editable fields
+  if (body.name !== undefined) updateData.name = body.name;
+  if (body.bio !== undefined) updateData.bio = body.bio;
+  if (body.avatar_url !== undefined) updateData.avatar_url = body.avatar_url;
+
+  if (body.toggleRole) {
+    updateData.role = currentProfile.role === "guest" ? "host" : "guest";
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return c.json({ error: "No valid fields were provided" }, 400);
+  }
+
+  const updatedProfile = await userDb.updateProfile(sb, userId, updateData);
 
   return c.json(updatedProfile, 200);
 });
