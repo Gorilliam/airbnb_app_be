@@ -1,55 +1,53 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+export interface Booking {
+  id: string;
+  property_id: string;
+  user_id: string;
+  check_in_date: string;
+  check_out_date: string;
+  total_price: number;
+  created_at: string;
+}
 
-type BookingWithRelations = Omit<Booking, "user_id" | "property_id"> & {
+export interface BookingWithRelations extends Booking {
   user: {
-    user_id: string;
+    id: string;
     name: string;
     email: string;
   } | null;
+
   property: {
     id: string;
     name: string;
     location: string;
     price_per_night: number;
   } | null;
-};
+}
 
 export async function getBookings(
   sb: SupabaseClient,
   query: BookingListQuery
-): Promise<{
-  data: BookingWithRelations[];
-  count: number | null;
-  offset: number;
-  limit: number;
-}> {
+) {
   const { limit = 10, offset = 0 } = query;
 
-const { data, error, count } = await sb
-  .from("bookings")
-  .select(`
-    *,
-    user:user_profiles (
-      user_id,
-      name,
-      email
-    ),
-    property:properties (
-      id,
-      name,
-      location,
-      price_per_night
+  const { data, count, error } = await sb
+    .from("bookings")
+    .select(
+      `
+      *,
+      user:user_profiles ( id, name, email ),
+      property:properties ( id, name, location, price_per_night )
+      `,
+      { count: "exact" }
     )
-  `, { count: "exact" })
-  .range(offset, offset + limit - 1)
-  .order("created_at", { ascending: false });
-
+    .range(offset, offset + limit - 1)
+    .order("created_at", { ascending: false });
 
   if (error) throw error;
 
   return {
-    data: (data ?? []) as unknown as BookingWithRelations[],
+    data: (data ?? []) as BookingWithRelations[],
     count,
     offset,
     limit,
@@ -62,20 +60,13 @@ export async function getBooking(
 ): Promise<BookingWithRelations> {
   const { data, error } = await sb
     .from("bookings")
-    .select(`
+    .select(
+      `
       *,
-      user:user_profiles (
-        id,
-        name,
-        email
-      ),
-      property:properties (
-        id,
-        name,
-        location,
-        price_per_night
-      )
-    `)
+      user:user_profiles ( id, name, email ),
+      property:properties ( id, name, location, price_per_night )
+      `
+    )
     .eq("id", id)
     .single();
 
@@ -91,49 +82,48 @@ export async function getBookingsForUser(
 ) {
   const { limit = 10, offset = 0 } = query;
 
-  const { data, error, count } = await sb
+  const { data, count, error } = await sb
     .from("bookings")
-    .select(`
+    .select(
+      `
       *,
-      user:user_profiles (*),
-      property:properties (*)
-    `)
+      user:user_profiles ( id, name, email ),
+      property:properties ( id, name, location, price_per_night )
+      `
+    )
     .eq("user_id", userId)
     .range(offset, offset + limit - 1)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
 
-  return { data, count, offset, limit };
+  return {
+    data: (data ?? []) as BookingWithRelations[],
+    count,
+    offset,
+    limit,
+  };
 }
 
-
-
-export async function createBooking(sb: SupabaseClient, booking: NewBooking) {
-
+export async function createBooking(
+  sb: SupabaseClient,
+  booking: NewBooking
+) {
   const { data, error } = await sb
     .from("bookings")
     .insert(booking)
     .select()
     .single();
 
-
   if (error) throw error;
 
-  console.log("🟦 Updating availability for property:", booking.property_id);
-
-  const { data: updateData, error: updateError } = await sb
+  await sb
     .from("properties")
     .update({ availability: false })
-    .eq("id", booking.property_id)
-    .select();
-
-  if (updateError) throw updateError;
+    .eq("id", booking.property_id);
 
   return data;
 }
-
-
 
 export async function updateBooking(
   sb: SupabaseClient,
@@ -148,14 +138,11 @@ export async function updateBooking(
     .single();
 
   if (error) throw error;
+
   return data as Booking;
 }
 
-
-export async function deleteBooking(
-  sb: SupabaseClient,
-  id: string
-) {
+export async function deleteBooking(sb: SupabaseClient, id: string) {
   const { data: booking } = await sb
     .from("bookings")
     .select("property_id")
@@ -164,20 +151,12 @@ export async function deleteBooking(
 
   if (!booking) return null;
 
-  const { error: deleteError } = await sb
-    .from("bookings")
-    .delete()
-    .eq("id", id);
+  await sb.from("bookings").delete().eq("id", id);
 
-  if (deleteError) throw deleteError;
-
-  const { error: propertyError } = await sb
+  await sb
     .from("properties")
     .update({ availability: true })
     .eq("id", booking.property_id);
 
-  if (propertyError) throw propertyError;
-
   return true;
 }
-

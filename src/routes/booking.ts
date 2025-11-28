@@ -52,12 +52,10 @@ bookingApp.get("/:id", requireAuth, async (c) => {
     const booking = await db.getBooking(sb, id);
     if (!booking) throw new Error("Booking not found");
 
-    if (!booking.user || booking.user.user_id !== user.id) {
-      if (user.role !== "admin") {
-        throw new HTTPException(403, {
-          res: c.json({ error: "Not allowed to view this booking" }, 403),
-        });
-      }
+    if (booking.user_id !== user.id && user.role !== "admin") {
+      throw new HTTPException(403, {
+        res: c.json({ error: "Not allowed to view this booking" }, 403)
+      });
     }
 
     return c.json(booking, 200);
