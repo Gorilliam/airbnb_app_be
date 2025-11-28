@@ -70,7 +70,7 @@ bookingApp.post("/", requireAuth, bookingCreateValidator,  async (c) => {
 
     const booking = await db.createBooking(sb, newBooking as NewBooking);
     return c.json(booking, 201);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating booking:", error);
 
     if ((error as PostgrestError).code === "23503") {

@@ -62,7 +62,7 @@ propertyApp.post("/", requireAuth, propertyValidator, async (c) => {
 
     const property = await db.createProperty(sb, newProperty);
     return c.json(property, 201);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating property:", error);
 
     if ((error as PostgrestError).code === "23505") {
