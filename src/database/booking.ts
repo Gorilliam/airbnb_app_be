@@ -1,7 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-console.log("🔥 booking.ts HAS LOADED");
-
 
 type BookingWithRelations = Omit<Booking, "user_id" | "property_id"> & {
   user: {
@@ -16,7 +14,6 @@ type BookingWithRelations = Omit<Booking, "user_id" | "property_id"> & {
     price_per_night: number;
   } | null;
 };
-
 
 export async function getBookings(
   sb: SupabaseClient,
@@ -59,20 +56,32 @@ const { data, error, count } = await sb
   };
 }
 
-
-
 export async function getBooking(
   sb: SupabaseClient,
   id: string
-): Promise<Booking> {
+): Promise<BookingWithRelations> {
   const { data, error } = await sb
     .from("bookings")
-    .select("*")
+    .select(`
+      *,
+      user:user_profiles (
+        id,
+        name,
+        email
+      ),
+      property:properties (
+        id,
+        name,
+        location,
+        price_per_night
+      )
+    `)
     .eq("id", id)
     .single();
 
   if (error) throw error;
-  return data as Booking;
+
+  return data as BookingWithRelations;
 }
 
 export async function getBookingsForUser(
@@ -101,21 +110,16 @@ export async function getBookingsForUser(
 
 
 export async function createBooking(sb: SupabaseClient, booking: NewBooking) {
-  console.log("🟦 Incoming booking payload:", booking);
 
-  // 1. Create booking
   const { data, error } = await sb
     .from("bookings")
     .insert(booking)
     .select()
     .single();
 
-  console.log("🟩 Insert data:", data);
-  console.log("🟥 Insert error:", error);
 
   if (error) throw error;
 
-  // 2. Update availability
   console.log("🟦 Updating availability for property:", booking.property_id);
 
   const { data: updateData, error: updateError } = await sb
@@ -123,9 +127,6 @@ export async function createBooking(sb: SupabaseClient, booking: NewBooking) {
     .update({ availability: false })
     .eq("id", booking.property_id)
     .select();
-
-  console.log("🟨 Availability update result:", updateData);
-  console.log("🟥 Availability update error:", updateError);
 
   if (updateError) throw updateError;
 
