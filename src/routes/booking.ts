@@ -65,7 +65,6 @@ bookingApp.post("/", requireAuth, bookingCreateValidator, async (c) => {
   const user = c.get("user")!;
   const newBooking = c.req.valid("json");
 
-  // 1️⃣ Check property ownership BEFORE try/catch (don't throw inside try)
   const { data: propertyData, error: propertyErr } = await sb
     .from("properties")
     .select("user_id")
@@ -81,7 +80,6 @@ bookingApp.post("/", requireAuth, bookingCreateValidator, async (c) => {
     return c.json({ error: "You cannot book your own property" }, 400);
   }
 
-  // 2️⃣ Now safely continue booking logic
   try {
     newBooking.user_id = user.id;
 
@@ -108,7 +106,22 @@ bookingApp.post("/", requireAuth, bookingCreateValidator, async (c) => {
 bookingApp.put("/:id", requireAuth, bookingUpdateValidator, async (c) => {
   const { id } = c.req.param();
   const sb = c.get("supabase");
+  const user = c.get("user")!;
   const newBooking: Partial<NewBooking> = c.req.valid("json");
+
+    const existing = await sb
+    .from("bookings")
+    .select("user_id")
+    .eq("id", id)
+    .single();
+
+  if (!existing.data) {
+    return c.json({ error: "Booking not found" }, 404);
+  }
+
+  if (existing.data.user_id !== user.id && user.role !== "admin") {
+    return c.json({ error: "Not authorized" }, 403);
+  }
 
   try {
     const booking = await db.updateBooking(sb, id, newBooking);
