@@ -60,28 +60,48 @@ bookingApp.get("/:id", async (c) => {
 });
 
 
-bookingApp.post("/", requireAuth, bookingCreateValidator,  async (c) => {
+bookingApp.post("/", requireAuth, bookingCreateValidator, async (c) => {
   const sb = c.get("supabase");
-  const user = c.get("user")!; // logged-in user
+  const user = c.get("user")!;
   const newBooking = c.req.valid("json");
 
+  // 1️⃣ Check property ownership BEFORE try/catch (don't throw inside try)
+  const { data: propertyData, error: propertyErr } = await sb
+    .from("properties")
+    .select("user_id")
+    .eq("id", newBooking.property_id)
+    .single();
+
+  if (propertyErr) {
+    console.error("Property lookup failed:", propertyErr);
+    return c.json({ error: "Invalid property" }, 400);
+  }
+
+  if (propertyData?.user_id === user.id) {
+    return c.json({ error: "You cannot book your own property" }, 400);
+  }
+
+  // 2️⃣ Now safely continue booking logic
   try {
     newBooking.user_id = user.id;
 
     const booking = await db.createBooking(sb, newBooking as NewBooking);
     return c.json(booking, 201);
+
   } catch (error: unknown) {
     console.error("Error creating booking:", error);
 
     if ((error as PostgrestError).code === "23503") {
-      throw new HTTPException(400, {
-        res: c.json({ error: "Invalid property or user reference" }, 400),
-      });
+      return c.json(
+        { error: "Invalid property or user reference" },
+        400
+      );
     }
 
-    throw new HTTPException(400, {
-      res: c.json({ error: "Booking could not be created" }, 400),
-    });
+    return c.json(
+      { error: "Booking could not be created" },
+      400
+    );
   }
 });
 
