@@ -49,7 +49,7 @@ bookingApp.get("/:id", async (c) => {
   const sb = c.get("supabase");
 
   try {
-    const booking = await db.getBooking(sb, id);
+    const booking = await db.getBookingWithRelations(sb, id);
     return c.json(booking, 200);
   } catch (error) {
     console.error("Error fetching booking:", error);

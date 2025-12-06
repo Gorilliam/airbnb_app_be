@@ -1,79 +1,47 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-console.log("🔥 booking.ts HAS LOADED");
 
+export type BookingWithRelations = {
+  id: string;
+  check_in_date: string;
+  check_out_date: string;
+  total_price: number;
+  created_at: string;
 
-type BookingWithRelations = Omit<Booking, "user_id" | "property_id"> & {
   user: {
     user_id: string;
     name: string;
     email: string;
-  } | null;
+  };
+
   property: {
     id: string;
     name: string;
     location: string;
     price_per_night: number;
-  } | null;
+  };
 };
 
 
-export async function getBookings(
-  sb: SupabaseClient,
-  query: BookingListQuery
-): Promise<{
-  data: BookingWithRelations[];
-  count: number | null;
-  offset: number;
-  limit: number;
-}> {
-  const { limit = 10, offset = 0 } = query;
+type RawBookingResponse = {
+  id: string;
+  check_in_date: string;
+  check_out_date: string;
+  total_price: number;
+  created_at: string;
+  user: {
+    user_id: string;
+    name: string;
+    email: string;
+  }[];
+  property: {
+    id: string;
+    name: string;
+    location: string;
+    price_per_night: number;
+  }[];
+};
 
-const { data, error, count } = await sb
-  .from("bookings")
-  .select(`
-    *,
-    user:user_profiles (
-      user_id,
-      name,
-      email
-    ),
-    property:properties (
-      id,
-      name,
-      location,
-      price_per_night
-    )
-  `, { count: "exact" })
-  .range(offset, offset + limit - 1)
-  .order("created_at", { ascending: false });
-
-
-  if (error) throw error;
-
-  return {
-    data: (data ?? []) as unknown as BookingWithRelations[],
-    count,
-    offset,
-    limit,
-  };
-}
-
-
-
-export async function getBooking(
-  sb: SupabaseClient,
-  id: string
-): Promise<Booking> {
-  const { data, error } = await sb
-    .from("bookings")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error) throw error;
-  return data as Booking;
-}
 
 export async function getBookingsForUser(
   sb: SupabaseClient,
@@ -98,24 +66,51 @@ export async function getBookingsForUser(
   return { data, count, offset, limit };
 }
 
+export async function getBookingWithRelations(
+  sb: SupabaseClient,
+  id: string
+): Promise<BookingWithRelations> {
+  const { data, error } = await sb
+    .from("bookings")
+    .select(`
+      id,
+      check_in_date,
+      check_out_date,
+      total_price,
+      created_at,
+      user:user_profiles!inner (
+        user_id,
+        name,
+        email
+      ),
+      property:properties!inner (
+        id,
+        name,
+        location,
+        price_per_night
+      )
+    `)
+    .eq("id", id)
+    .single<BookingWithRelations>();
 
+  if (error || !data) {
+    throw error ?? new Error("Booking not found");
+  }
+
+  return data;
+}
 
 export async function createBooking(sb: SupabaseClient, booking: NewBooking) {
   console.log("🟦 Incoming booking payload:", booking);
 
-  // 1. Create booking
   const { data, error } = await sb
     .from("bookings")
     .insert(booking)
     .select()
     .single();
 
-  console.log("🟩 Insert data:", data);
-  console.log("🟥 Insert error:", error);
-
   if (error) throw error;
 
-  // 2. Update availability
   console.log("🟦 Updating availability for property:", booking.property_id);
 
   const { data: updateData, error: updateError } = await sb
@@ -123,9 +118,6 @@ export async function createBooking(sb: SupabaseClient, booking: NewBooking) {
     .update({ availability: false })
     .eq("id", booking.property_id)
     .select();
-
-  console.log("🟨 Availability update result:", updateData);
-  console.log("🟥 Availability update error:", updateError);
 
   if (updateError) throw updateError;
 
@@ -179,4 +171,3 @@ export async function deleteBooking(
 
   return true;
 }
-
