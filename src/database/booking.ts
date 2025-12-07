@@ -23,26 +23,6 @@ export type BookingWithRelations = {
 };
 
 
-type RawBookingResponse = {
-  id: string;
-  check_in_date: string;
-  check_out_date: string;
-  total_price: number;
-  created_at: string;
-  user: {
-    user_id: string;
-    name: string;
-    email: string;
-  }[];
-  property: {
-    id: string;
-    name: string;
-    location: string;
-    price_per_night: number;
-  }[];
-};
-
-
 export async function getBookingsForUser(
   sb: SupabaseClient,
   userId: string,
@@ -63,7 +43,12 @@ export async function getBookingsForUser(
 
   if (error) throw error;
 
-  return { data, count, offset, limit };
+  return {
+    data: (data ?? []) as BookingWithRelations[],
+    count,
+    offset,
+    limit,
+  };
 }
 
 export async function getBookingWithRelations(
@@ -101,7 +86,7 @@ export async function getBookingWithRelations(
 }
 
 export async function createBooking(sb: SupabaseClient, booking: NewBooking) {
-  console.log("🟦 Incoming booking payload:", booking);
+  console.log("Incoming booking payload:", booking);
 
   const { data, error } = await sb
     .from("bookings")
@@ -111,9 +96,8 @@ export async function createBooking(sb: SupabaseClient, booking: NewBooking) {
 
   if (error) throw error;
 
-  console.log("🟦 Updating availability for property:", booking.property_id);
 
-  const { data: updateData, error: updateError } = await sb
+  const { error: updateError } = await sb
     .from("properties")
     .update({ availability: false })
     .eq("id", booking.property_id)
@@ -136,7 +120,7 @@ export async function updateBooking(
     .update(booking)
     .eq("id", id)
     .select()
-    .single();
+    .single<Booking>();
 
   if (error) throw error;
   return data as Booking;

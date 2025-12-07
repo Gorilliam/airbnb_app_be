@@ -25,15 +25,14 @@ const propertyQuerySchema: z.ZodType<PropertyListQuery> = z.object({
   offset: z.coerce.number().optional().default(0),
   q: z.string().optional(),
   location: z.string().optional(),
-  sort_by: z
-    .union([
-      z.literal("name"),
-      z.literal("price_per_night"),
-      z.literal("created_at"),
-      z.string(),
-    ])
-    .optional()
-    .default("name"),
+sort_by: z
+  .union([
+    z.literal("name"),
+    z.literal("price_per_night"),
+    z.literal("created_at"),
+  ])
+  .optional()
+  .default("name"),
 });
 
 export const propertyQueryValidator = zValidator("query", propertyQuerySchema);
