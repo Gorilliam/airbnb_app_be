@@ -41,7 +41,7 @@ bookingApp.get("/", requireAuth, bookingQueryValidator, async (c) => {
   }
 });
 
-bookingApp.get("/:id", async (c) => {
+bookingApp.get("/:id", requireAuth, async (c) => {
   const { id } = c.req.param();
   const sb = c.get("supabase");
 
