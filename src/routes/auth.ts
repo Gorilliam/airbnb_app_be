@@ -51,6 +51,7 @@ authApp.post("/login", async (c) => {
     });
   }
 
+  await sb.auth.setSession(data.session);
 
   return c.json(data.user, 200);
 });
