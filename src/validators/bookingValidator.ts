@@ -1,9 +1,6 @@
 import * as z from "zod";
 import { zValidator } from "@hono/zod-validator";
 
-// -------------------------
-// CREATE BOOKING VALIDATOR
-// -------------------------
 const bookingCreateSchema = z.object({
   property_id: z.string({ message: "Property ID is required" }),
   user_id: z.string().optional(), 
@@ -26,9 +23,6 @@ export const bookingCreateValidator = zValidator(
   }
 );
 
-// -------------------------
-// UPDATE BOOKING VALIDATOR
-// -------------------------
 const bookingUpdateSchema = z.object({
   check_in_date: z.string().optional(),
   check_out_date: z.string().optional(),
@@ -50,9 +44,6 @@ export const bookingUpdateValidator = zValidator(
   }
 );
 
-// -------------------------
-// QUERY VALIDATOR (unchanged)
-// -------------------------
 const bookingQuerySchema = z.object({
   q: z.string().optional(),
   sort_by: z

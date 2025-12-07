@@ -103,7 +103,7 @@ export async function createBooking(sb: SupabaseClient, booking: NewBooking) {
     .from("bookings")
     .insert(booking)
     .select()
-    .single();
+    .single<Booking>();
 
   if (error) throw error;
 
