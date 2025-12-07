@@ -30,16 +30,27 @@ export async function getBookingsForUser(
 ) {
   const { limit = 10, offset = 0 } = query;
 
-  const { data, error, count } = await sb
-    .from("bookings")
-    .select(`
+ const { data, error, count } = await sb
+  .from("bookings")
+  .select(`
       *,
-      user:user_profiles (*),
-      property:properties (*)
-    `)
-    .eq("user_id", userId)
-    .range(offset, offset + limit - 1)
-    .order("created_at", { ascending: false });
+      user:user_profiles (
+        user_id,
+        name,
+        email
+      ),
+      property:properties (
+        id,
+        name,
+        location,
+        price_per_night
+      )
+  `)
+  .eq("user_id", userId)
+  .range(offset, offset + limit - 1)
+  .order("created_at", { ascending: false })
+
+
 
   if (error) throw error;
 

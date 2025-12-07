@@ -30,7 +30,7 @@ propertyApp.get("/", propertyQueryValidator, async (c) => {
     });
   } catch (error) {
     console.error("Error fetching properties:", error);
-    return c.json(defaultResponse);
+    return c.json(defaultResponse, 500);
   }
 });
 
@@ -53,11 +53,10 @@ propertyApp.get("/:id", async (c) => {
 
 propertyApp.post("/", requireAuth, propertyValidator, async (c) => {
   const sb = c.get("supabase");
-  const user = c.get("user")!; // current logged-in user
+  const user = c.get("user")!;
   const newProperty: NewProperty = c.req.valid("json");
 
   try {
-    // attach user_id automatically
     newProperty.user_id = user.id;
 
     const property = await db.createProperty(sb, newProperty);
@@ -65,7 +64,7 @@ propertyApp.post("/", requireAuth, propertyValidator, async (c) => {
   } catch (error: unknown) {
     console.error("Error creating property:", error);
 
-    if ((error as PostgrestError).code === "23505") {
+    if ((error as PostgrestError)?.code === "23505") {
       throw new HTTPException(409, {
         res: c.json({ error: "Duplicate property ID" }, 409),
       });
@@ -84,12 +83,15 @@ propertyApp.put("/:id", requireAuth, propertyValidator, async (c) => {
   const id = c.req.param("id");
   const newProperty = c.req.valid("json");
 
-  const existing = await db.getProperty(sb, id).catch((err) => {
-    console.error("DB error (getProperty):", err);
-    throw new HTTPException(500, {
-      res: c.json({ error: "Database error while fetching property" }, 500),
-    });
+  let existing;
+try {
+  existing = await db.getProperty(sb, id);
+} catch (err) {
+  throw new HTTPException(500, {
+    res: c.json({ error: "Database error while fetching property" }, 500),
   });
+}
+
 
   if (!existing) {
     throw new HTTPException(404, {

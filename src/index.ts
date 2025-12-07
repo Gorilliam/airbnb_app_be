@@ -21,7 +21,7 @@ app.use(
   "*",
   cors({
     origin: [
-      "http://localhost:3000",
+      "http://localhost:3002",
       "https://airbnb-fe-fawn.vercel.app",
     ],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],

@@ -1,4 +1,4 @@
-import type { SupabaseClient, PostgrestSingleResponse } from "@supabase/supabase-js";
+import type { SupabaseClient, PostgrestResponse, PostgrestSingleResponse } from "@supabase/supabase-js";
 
 export async function getProperties(
   sb: SupabaseClient,
@@ -21,7 +21,7 @@ export async function getProperties(
     _query.or(`name.ilike.%${query.q}%,description.ilike.%${query.q}%,location.ilike.%${query.q}%`);
   }
 
-  const { data, count, error }: PostgrestSingleResponse<Property[]> & { count: number | null } = await _query;
+  const { data, count, error }: PostgrestResponse<Property> & { count: number | null } = await _query;
   if (error) throw error;
 
   return {
@@ -77,4 +77,3 @@ export async function deleteProperty(sb: SupabaseClient, id: string): Promise<Pr
   if (error) throw error;
   return data;
 }
-

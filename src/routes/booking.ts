@@ -34,9 +34,6 @@ bookingApp.get("/", requireAuth, bookingQueryValidator, async (c) => {
       user.id,
        query
       );
-    console.log("Fetched bookings:", response.data?.length, "rows");
-    console.log(JSON.stringify(response.data, null, 2));
-
     return c.json({ ...defaultResponse, ...response });
   } catch (error) {
     console.error("Error fetching bookings:", error);
@@ -71,8 +68,7 @@ bookingApp.post("/", requireAuth, bookingCreateValidator, async (c) => {
     .eq("id", newBooking.property_id)
     .single();
 
-  if (propertyErr) {
-    console.error("Property lookup failed:", propertyErr);
+  if (propertyErr || !propertyData) {
     return c.json({ error: "Invalid property" }, 400);
   }
 
@@ -89,7 +85,7 @@ bookingApp.post("/", requireAuth, bookingCreateValidator, async (c) => {
   } catch (error: unknown) {
     console.error("Error creating booking:", error);
 
-    if ((error as PostgrestError).code === "23503") {
+    if ((error as PostgrestError)?.code === "23503") {
       return c.json(
         { error: "Invalid property or user reference" },
         400
@@ -138,6 +134,21 @@ bookingApp.put("/:id", requireAuth, bookingUpdateValidator, async (c) => {
 bookingApp.delete("/:id", requireAuth, async (c) => {
   const { id } = c.req.param();
   const sb = c.get("supabase");
+  const user = c.get("user")!;
+
+  const existing = await sb
+    .from("bookings")
+    .select("user_id")
+    .eq("id", id)
+    .single();
+
+  if (!existing.data) {
+    return c.json({ error: "Booking not found" }, 404);
+  }
+
+  if (existing.data.user_id !== user.id && user.role !== "admin") {
+    return c.json({ error: "Not authorized" }, 403);
+  }
 
   try {
     const booking = await db.deleteBooking(sb, id);
